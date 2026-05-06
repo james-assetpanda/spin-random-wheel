@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spin the Wheel</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fraunces:ital,wght@0,700;0,900;1,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f1a;
+  --surface: #181828;
+  --surface2: #20203a;
+  --border: rgba(255,255,255,0.08);
+  --text: #eeeeff;
+  --muted: rgba(238,238,255,0.45);
+  --accent: #7c6bff;
+  --accent2: #ff6b9d;
+  --green: #4ade80;
+  --radius: 14px;
+  --shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-image:
+    radial-gradient(ellipse at 10% 20%, rgba(124,107,255,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 80%, rgba(255,107,157,0.08) 0%, transparent 50%);
+}
+
+/* ── NAV ── */
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 28px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(15,15,26,0.9);
+  backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 100;
+  position: relative;
+}
+.logo {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+}
+.nav-badge {
+  font-size: 11px;
+  background: rgba(124,107,255,0.18);
+  border: 1px solid rgba(124,107,255,0.3);
+  color: var(--accent);
+  padding: 4px 12px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+}
+
+/* ── LAYOUT ── */
+.app {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr minmax(300px,380px);
+  gap: 0;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 32px 24px;
+  gap: 32px;
+}
+@media(max-width:780px){
+  .app { grid-template-columns:1fr; }
+}
+
+/* ── WHEEL SIDE ── */
+.wheel-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.wheel-wrap {
+  position: relative;
+  width: min(520px, 90vw);
+  height: min(520px, 90vw);
+}
+
+/* Glow behind wheel */
+.wheel-wrap::before {
+  content: '';
+  position: absolute;
+  inset: -20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(124,107,255,0.15) 0%, transparent 70%);
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+@keyframes pulseGlow {
+  0%,100%{ opacity:0.6; transform:scale(1); }
+  50%{ opacity:1; transform:scale(1.04); }
+}
+
+canvas#wheel {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  display: block;
+}
+
+/* Pointer */
+.pointer {
+  position: absolute;
+  right: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0; height: 0;
+  border-top: 18px solid transparent;
+  border-bottom: 18px solid transparent;
+  border-right: 42px solid var(--accent2);
+  filter: drop-shadow(0 0 8px var(--accent2));
+  z-index: 10;
+}
+.pointer::after {
+  content:'';
+  position:absolute;
+  right:-42px; top:-6px;
+  width:0; height:0;
+  border-top:6px solid transparent;
+  border-bottom:6px solid transparent;
+  border-right:16px solid rgba(255,107,157,0.4);
+}
+
+/* Center button */
+.spin-center {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: 4px solid var(--bg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Fraunces', serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #fff;
+  box-shadow: 0 0 24px rgba(124,107,255,0.5), 0 4px 16px rgba(0,0,0,0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+  z-index: 10;
+  user-select: none;
+}
+.spin-center:hover:not(.disabled) {
+  transform: translate(-50%,-50%) scale(1.08);
+  box-shadow: 0 0 36px rgba(124,107,255,0.7), 0 6px 20px rgba(0,0,0,0.5);
+}
+.spin-center.disabled { cursor: not-allowed; opacity: 0.6; }
+
+/* ── CONTROLS BELOW WHEEL ── */
+.wheel-controls {
+  display: flex;
+  gap: 10px;
+}
+.btn {
+  padding: 10px 22px;
+  border-radius: 10px;
+  border: none;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), #5a4bdd);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(124,107,255,0.35);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(124,107,255,0.5); }
+.btn-ghost {
+  background: var(--surface2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover { color: var(--text); background: rgba(255,255,255,0.07); }
+
+/* Winner banner */
+#winner-banner {
+  display: none;
+  background: linear-gradient(135deg, rgba(124,107,255,0.2), rgba(255,107,157,0.2));
+  border: 1px solid rgba(124,107,255,0.4);
+  border-radius: var(--radius);
+  padding: 18px 28px;
+  text-align: center;
+  width: 100%;
+  max-width: min(520px, 90vw);
+  animation: slideUp 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity:0; }
+  to { transform: translateY(0); opacity:1; }
+}
+#winner-banner.show { display: block; }
+#winner-banner .win-label {
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+#winner-banner .win-name {
+  font-family: 'Fraunces', serif;
+  font-size: 32px;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+#winner-banner .win-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ── SIDE PANEL ── */
+.side-panel { display: flex; flex-direction: column; gap: 20px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.card-title {
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title::before {
+  content: '';
+  width: 3px; height: 14px;
+  background: linear-gradient(var(--accent), var(--accent2));
+  border-radius: 2px;
+}
+
+/* Name input area */
+.names-textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-family: 'Nunito', sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
+  resize: vertical;
+  min-height: 180px;
+  transition: border-color 0.2s;
+}
+.names-textarea:focus {
+  outline: none;
+  border-color: rgba(124,107,255,0.5);
+  box-shadow: 0 0 0 3px rgba(124,107,255,0.1);
+}
+.names-textarea::placeholder { color: rgba(238,238,255,0.2); }
+
+.names-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+.name-count {
+  font-size: 12px;
+  color: var(--muted);
+}
+.name-count span { color: var(--accent); font-weight: 700; }
+
+/* Name list pills */
+.name-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+  max-height: 130px;
+  overflow-y: auto;
+}
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: default;
+  transition: transform 0.15s;
+}
+.pill:hover { transform: scale(1.04); }
+.pill .remove {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.25);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.pill .remove:hover { background: rgba(255,255,255,0.2); }
+
+/* History */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface2);
+  border-radius: 8px;
+  font-size: 13px;
+}
+.history-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.history-name { font-weight: 700; flex: 1; }
+.history-spin {
+  font-size: 11px;
+  color: var(--muted);
+}
+.empty-state {
+  text-align: center;
+  padding: 20px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.empty-state div { font-size: 28px; margin-bottom: 8px; }
+
+/* ── CONFETTI ── */
+.confetti-piece {
+  position: fixed;
+  width: 10px; height: 10px;
+  top: -20px;
+  border-radius: 2px;
+  animation: confettiFall linear forwards;
+  pointer-events: none;
+  z-index: 999;
+}
+@keyframes confettiFall {
+  to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+/* ── HIDDEN ADMIN (keyboard shortcut) ── */
+#admin-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+#admin-overlay.open { display: flex; }
+
+.admin-modal {
+  background: #0d0d1e;
+  border: 1px solid rgba(124,107,255,0.35);
+  border-radius: 18px;
+  padding: 32px;
+  width: 420px;
+  max-width: 95vw;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(124,107,255,0.1);
+  animation: modalPop 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes modalPop {
+  from { transform: scale(0.85); opacity:0; }
+  to { transform: scale(1); opacity:1; }
+}
+.admin-modal h2 {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.admin-modal h2 .dot { width:10px;height:10px;border-radius:50%;background:#ff4d4d;display:inline-block; }
+.admin-modal .admin-sub {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-field { margin-bottom: 20px; }
+.admin-field label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.admin-field label .val {
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface2);
+  outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(124,107,255,0.6);
+}
+
+.admin-name-list {
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+.admin-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface2);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+.admin-name-row .aname {
+  flex: 1;
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.admin-name-row .aweight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.admin-name-row input[type=range] {
+  width: 100px;
+  height: 4px;
+}
+.admin-name-row .wval {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 800;
+  min-width: 30px;
+  text-align: right;
+}
+.admin-note {
+  font-size: 11px;
+  color: rgba(255,255,255,0.25);
+  line-height: 1.6;
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 16px;
+}
+.admin-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+.admin-actions .btn { flex: 1; }
+.btn-danger {
+  background: rgba(255,77,77,0.15);
+  color: #ff6b6b;
+  border: 1px solid rgba(255,77,77,0.25);
+}
+.btn-danger:hover { background: rgba(255,77,77,0.25); }
+
+/* scrollbar styling */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">🎡 SpinPick</div>
+  <div class="nav-badge">Random Winner Picker</div>
+  <div id="ghost-trigger" onclick="ibanAlwaysWin=!ibanAlwaysWin" style="position:absolute;top:0;right:0;width:40px;height:100%;cursor:default;"></div>
+</nav>
+
+<div class="app">
+
+  <!-- LEFT: WHEEL -->
+  <div class="wheel-side">
+    <div class="wheel-wrap">
+      <div class="pointer"></div>
+      <canvas id="wheel" width="520" height="520"></canvas>
+      <div class="spin-center" id="spin-btn" onclick="spinWheel()">SPIN</div>
+    </div>
+
+    <div id="winner-banner">
+      <div class="win-label">🎉 We have a winner!</div>
+      <div class="win-name" id="winner-name">—</div>
+      <div class="win-sub" id="winner-sub"></div>
+    </div>
+
+    <div class="wheel-controls">
+      <button class="btn btn-primary" onclick="spinWheel()">Spin the Wheel</button>
+      <button class="btn btn-ghost" onclick="removeWinner()">Remove Winner</button>
+      <button class="btn btn-ghost" onclick="resetAll()">Reset</button>
+    </div>
+  </div>
+
+  <!-- RIGHT: INPUTS -->
+  <div class="side-panel">
+
+    <div class="card">
+      <div class="card-title">Participants</div>
+      <textarea class="names-textarea" id="names-input"
+        placeholder="Enter names here, one per line...&#10;&#10;Alice&#10;Bob&#10;Charlie"
+        oninput="parseNames()"></textarea>
+      <div class="names-footer">
+        <span class="name-count"><span id="count">0</span> names</span>
+        <button class="btn btn-ghost" style="padding:6px 14px;font-size:12px" onclick="clearNames()">Clear all</button>
+      </div>
+      <div class="name-pills" id="name-pills"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Spin History</div>
+      <div class="history-list" id="history-list">
+        <div class="empty-state"><div>🎲</div>No spins yet</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- HIDDEN ADMIN MODAL — opened with Ctrl+Shift+A -->
+<div id="admin-overlay" onclick="closeAdmin(event)">
+  <div class="admin-modal" onclick="event.stopPropagation()">
+    <h2><span class="dot"></span> Admin Controls</h2>
+    <p class="admin-sub">BACKEND ONLY · NOT VISIBLE TO USERS</p>
+
+    <div class="admin-field">
+      <label>
+        Rig Mode
+      </label>
+      <select id="rig-mode" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:10px;font-family:'Nunito',sans-serif;font-size:13px;">
+        <option value="fair">Fair — Truly random (equal weight)</option>
+        <option value="weighted">Weighted — Adjust per-person below</option>
+        <option value="boost">Boost One — One person always wins</option>
+      </select>
+    </div>
+
+    <div class="admin-field" id="boost-field" style="display:none">
+      <label>Forced Winner</label>
+      <select id="force-winner" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:10px;font-family:'Nunito',sans-serif;font-size:13px;"></select>
+    </div>
+
+    <div class="admin-field" id="weights-field" style="display:none">
+      <label>Win Weight per Person <span class="val" style="font-size:11px;color:var(--muted)">higher = more likely</span></label>
+      <div class="admin-name-list" id="admin-name-list"></div>
+    </div>
+
+    <p class="admin-note">
+      The wheel always spins with a natural animation regardless of mode. The outcome is pre-calculated and the spin is smoothly steered to land on the chosen segment. Viewers cannot detect any difference.
+    </p>
+
+    <div class="admin-actions">
+      <button class="btn btn-danger" onclick="resetWeights()">Reset Weights</button>
+      <button class="btn btn-primary" onclick="closeAdminPanel()">Save & Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  PALETTE
+// ══════════════════════════════════════════════
+const PALETTE = [
+  '#7c6bff','#ff6b9d','#4ade80','#facc15','#38bdf8',
+  '#f97316','#e879f9','#34d399','#fb7185','#a78bfa',
+  '#60a5fa','#fbbf24','#2dd4bf','#f472b6','#86efac'
+];
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let names = [];
+let weights = [];   // index-based array — supports duplicate names
+let history = [];
+let spinning = false;
+let rotation = 0;
+let animId = null;
+let spinCount = 0;
+
+// ══════════════════════════════════════════════
+//  PARSE NAMES FROM TEXTAREA
+// ══════════════════════════════════════════════
+function parseNames() {
+  const raw = document.getElementById('names-input').value;
+  const parsed = raw.split('\n')
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+
+  const oldWeights = weights.slice();
+  names = parsed;
+  weights = names.map((_, i) => oldWeights[i] !== undefined ? oldWeights[i] : 5);
+
+  document.getElementById('count').textContent = names.length;
+  renderPills();
+  drawWheel(rotation);
+  syncAdminNames();
+}
+
+// ══════════════════════════════════════════════
+//  PILLS
+// ══════════════════════════════════════════════
+function renderPills() {
+  const c = document.getElementById('name-pills');
+  c.innerHTML = names.map((n, i) => {
+    const col = PALETTE[i % PALETTE.length];
+    return `<div class="pill" style="background:${col}22;color:${col};border:1px solid ${col}44">
+      ${n}
+      <span class="remove" onclick="removeAtIndex(${i})">✕</span>
+    </div>`;
+  }).join('');
+}
+
+function removeAtIndex(idx) {
+  names.splice(idx, 1);
+  weights.splice(idx, 1);
+  document.getElementById('names-input').value = names.join('\n');
+  document.getElementById('count').textContent = names.length;
+  renderPills();
+  drawWheel(rotation);
+  syncAdminNames();
+}
+
+function clearNames() {
+  names = [];
+  weights = [];
+  document.getElementById('names-input').value = '';
+  document.getElementById('count').textContent = 0;
+  document.getElementById('name-pills').innerHTML = '';
+  drawWheel(rotation);
+  syncAdminNames();
+}
+
+// ══════════════════════════════════════════════
+//  DRAW WHEEL
+// ══════════════════════════════════════════════
+const canvas = document.getElementById('wheel');
+const ctx = canvas.getContext('2d');
+
+function drawWheel(rot) {
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2, R = cx - 12;
+  ctx.clearRect(0,0,W,H);
+
+  if(names.length === 0) {
+    // Placeholder
+    ctx.beginPath();
+    ctx.arc(cx,cy,R,0,Math.PI*2);
+    ctx.fillStyle = '#20203a';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(124,107,255,0.2)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.font = 'bold 16px Nunito';
+    ctx.fillStyle = 'rgba(238,238,255,0.3)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Add names to get started', cx, cy);
+    return;
+  }
+
+  const n = names.length;
+  const slice = (2 * Math.PI) / n;
+
+  // Outer shadow ring
+  ctx.save();
+  ctx.shadowColor = 'rgba(124,107,255,0.4)';
+  ctx.shadowBlur = 24;
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+  ctx.strokeStyle = 'transparent'; ctx.lineWidth = 0;
+  ctx.stroke();
+  ctx.restore();
+
+  for(let i=0; i<n; i++) {
+    const startA = rot + i * slice;
+    const endA   = startA + slice;
+    const col    = PALETTE[i % PALETTE.length];
+
+    // Slice fill
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,R,startA,endA);
+    ctx.closePath();
+    ctx.fillStyle = col + 'dd';
+    ctx.fill();
+
+    // Subtle inner gradient overlay
+    const grad = ctx.createRadialGradient(cx,cy,R*0.1,cx,cy,R);
+    grad.addColorStop(0,'rgba(255,255,255,0.15)');
+    grad.addColorStop(1,'rgba(0,0,0,0.1)');
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,R,startA,endA);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Divider
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,R,startA,endA);
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(15,15,26,0.6)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Label
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.rotate(startA + slice/2);
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    const fontSize = Math.min(15, Math.max(9, Math.floor(R * slice * 0.45)));
+    ctx.font = `700 ${fontSize}px Nunito`;
+    ctx.fillStyle = '#fff';
+    ctx.shadowColor = 'rgba(0,0,0,0.6)';
+    ctx.shadowBlur = 4;
+    const label = names[i].length > 16 ? names[i].slice(0,15)+'…' : names[i];
+    ctx.fillText(label, R - 16, 0);
+    ctx.restore();
+  }
+
+  // Outer ring
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 3; ctx.stroke();
+
+  // Inner circle
+  const iGrad = ctx.createRadialGradient(cx,cy,0,cx,cy,R*0.14);
+  iGrad.addColorStop(0,'#2a1a4e');
+  iGrad.addColorStop(1,'#0d0d1e');
+  ctx.beginPath(); ctx.arc(cx,cy,R*0.14,0,Math.PI*2);
+  ctx.fillStyle = iGrad; ctx.fill();
+  ctx.strokeStyle = 'rgba(124,107,255,0.5)';
+  ctx.lineWidth = 2; ctx.stroke();
+}
+
+drawWheel(0);
+
+// ══════════════════════════════════════════════
+//  RIGGED OUTCOME ENGINE
+// ══════════════════════════════════════════════
+// ── HIDDEN TRIGGER ──────────────────────────────
+// A silent invisible zone in the nav bar activates "always win" mode
+// for "iban pilapil". No visual feedback, no animation, no indication.
+// ────────────────────────────────────────────────
+let ibanAlwaysWin = false;
+
+function checkHardcodedRules() {
+  if(!ibanAlwaysWin) return null;
+  const TARGET = 'iban pilapil';
+  const targetIdx = names.findIndex(n => n.trim().toLowerCase() === TARGET);
+  return targetIdx !== -1 ? targetIdx : null;
+}
+
+function pickOutcomeIndex() {
+  if(names.length === 0) return 0;
+
+  // Hardcoded rules take priority over everything
+  const hardcoded = checkHardcodedRules();
+  if(hardcoded !== null) return hardcoded;
+
+  const mode = document.getElementById('rig-mode').value;
+
+  if(mode === 'boost') {
+    const forced = parseInt(document.getElementById('force-winner').value);
+    return (forced >= 0 && forced < names.length) ? forced : Math.floor(Math.random()*names.length);
+  }
+
+  if(mode === 'weighted') {
+    const totalW = weights.reduce((s,w)=>s+(w||5), 0);
+    let r = Math.random() * totalW;
+    for(let i=0; i<names.length; i++){
+      r -= (weights[i]||5);
+      if(r<=0) return i;
+    }
+    return names.length-1;
+  }
+
+  // Fair
+  return Math.floor(Math.random() * names.length);
+}
+
+// ══════════════════════════════════════════════
+//  SPIN
+// ══════════════════════════════════════════════
+function spinWheel() {
+  if(spinning || names.length < 2) {
+    if(names.length < 2) showToast('Add at least 2 names!');
+    return;
+  }
+  spinning = true;
+  document.getElementById('spin-btn').classList.add('disabled');
+  document.getElementById('winner-banner').classList.remove('show');
+
+  const winnerIdx = pickOutcomeIndex();
+  const winner = names[winnerIdx];
+
+  // Calculate target rotation so pointer (at right = 0°) lands on winner slice
+  const n = names.length;
+  const sliceAngle = (2 * Math.PI) / n;
+  // Pointer is on the RIGHT side (0 rad from canvas perspective)
+  // We need the midpoint of winnerIdx's slice to align with the pointer
+  // Wheel drawn from 'rotation', slice i spans: rotation + i*slice to rotation + (i+1)*slice
+  // We want: rotation + winnerIdx*slice + slice/2 = 0 (mod 2π) → pointer
+  // → target rotation = -(winnerIdx * slice + slice/2)
+  const targetBaseAngle = -(winnerIdx * sliceAngle + sliceAngle / 2);
+
+  // Add multiple full spins + small random offset within the slice (for realism)
+  const extraSpins = (6 + Math.floor(Math.random() * 4)) * Math.PI * 2;
+  const jitter = (Math.random() - 0.5) * sliceAngle * 0.6; // stay within slice
+  const totalDelta = extraSpins + (targetBaseAngle - (rotation % (Math.PI*2)) + Math.PI*2*3) + jitter;
+
+  const duration = 4500 + Math.random() * 1500;
+  const startTime = performance.now();
+  const startRot = rotation;
+
+  function easeOut(t) { return 1 - Math.pow(1-t, 4); }
+
+  function frame(now) {
+    const elapsed = now - startTime;
+    const t = Math.min(elapsed / duration, 1);
+    rotation = startRot + totalDelta * easeOut(t);
+    drawWheel(rotation);
+    if(t < 1) {
+      animId = requestAnimationFrame(frame);
+    } else {
+      rotation = startRot + totalDelta;
+      drawWheel(rotation);
+      onSpinEnd(winner, winnerIdx);
+    }
+  }
+  animId = requestAnimationFrame(frame);
+}
+
+function onSpinEnd(winner, idx) {
+  spinning = false;
+  document.getElementById('spin-btn').classList.remove('disabled');
+  spinCount++;
+
+  history.unshift({ name: winner, color: PALETTE[idx % PALETTE.length], spin: spinCount });
+  renderHistory();
+
+  // Show winner banner
+  const banner = document.getElementById('winner-banner');
+  document.getElementById('winner-name').textContent = winner;
+  document.getElementById('winner-sub').textContent = `Spin #${spinCount} · ${names.length} participants`;
+  banner.classList.add('show');
+
+  // Confetti
+  launchConfetti(PALETTE[idx % PALETTE.length]);
+}
+
+// ══════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════
+function removeWinner() {
+  const wname = document.getElementById('winner-name').textContent;
+  const idx = names.indexOf(wname);
+  if(idx !== -1) removeAtIndex(idx);
+  document.getElementById('winner-banner').classList.remove('show');
+}
+
+function resetAll() {
+  if(animId) cancelAnimationFrame(animId);
+  spinning = false;
+  rotation = 0;
+  history = [];
+  spinCount = 0;
+  document.getElementById('winner-banner').classList.remove('show');
+  document.getElementById('spin-btn').classList.remove('disabled');
+  renderHistory();
+  drawWheel(0);
+}
+
+function renderHistory() {
+  const el = document.getElementById('history-list');
+  if(history.length === 0){
+    el.innerHTML = '<div class="empty-state"><div>🎲</div>No spins yet</div>';
+    return;
+  }
+  el.innerHTML = history.map(h=>`
+    <div class="history-item">
+      <div class="history-dot" style="background:${h.color}"></div>
+      <div class="history-name">${h.name}</div>
+      <div class="history-spin">Spin #${h.spin}</div>
+    </div>
+  `).join('');
+}
+
+function showToast(msg) {
+  // simple alert fallback
+  const d = document.createElement('div');
+  d.style.cssText = `position:fixed;bottom:30px;left:50%;transform:translateX(-50%);
+    background:#20203a;border:1px solid rgba(124,107,255,0.4);color:#eeeeff;
+    padding:12px 24px;border-radius:10px;font-size:13px;font-family:'Nunito',sans-serif;
+    z-index:9998;animation:slideUp 0.3s ease;font-weight:700;`;
+  d.textContent = msg;
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(),2500);
+}
+
+// ══════════════════════════════════════════════
+//  CONFETTI
+// ══════════════════════════════════════════════
+function launchConfetti(baseColor) {
+  const colors = [baseColor,'#fff','#facc15','#ff6b9d','#7c6bff'];
+  for(let i=0;i<70;i++){
+    setTimeout(()=>{
+      const p=document.createElement('div');
+      p.className='confetti-piece';
+      const col=colors[Math.floor(Math.random()*colors.length)];
+      p.style.cssText=`
+        left:${Math.random()*100}%;
+        background:${col};
+        width:${6+Math.random()*8}px;
+        height:${6+Math.random()*8}px;
+        border-radius:${Math.random()>0.5?'50%':'2px'};
+        animation-duration:${2+Math.random()*2}s;
+        animation-delay:${Math.random()*0.5}s;
+        transform:rotate(${Math.random()*360}deg);
+      `;
+      document.body.appendChild(p);
+      setTimeout(()=>p.remove(),4000);
+    }, i*30);
+  }
+}
+
+// ══════════════════════════════════════════════
+//  ADMIN PANEL
+// ══════════════════════════════════════════════
+// Open: Ctrl + Shift + A
+document.addEventListener('keydown', e => {
+  if(e.ctrlKey && e.shiftKey && e.key === 'A') {
+    e.preventDefault();
+    openAdminPanel();
+  }
+});
+
+function openAdminPanel() {
+  syncAdminNames();
+  document.getElementById('admin-overlay').classList.add('open');
+}
+function closeAdminPanel() {
+  document.getElementById('admin-overlay').classList.remove('open');
+}
+function closeAdmin(e) {
+  if(e.target === document.getElementById('admin-overlay')) closeAdminPanel();
+}
+
+function syncAdminNames() {
+  // Force winner dropdown — index-based so duplicates work
+  const fw = document.getElementById('force-winner');
+  fw.innerHTML = names.map((n,i)=>`<option value="${i}">${n} (slot ${i+1})</option>`).join('');
+
+  // Weights list — fully index-based
+  const al = document.getElementById('admin-name-list');
+  al.innerHTML = names.map((n,i)=>{
+    const w = weights[i] !== undefined ? weights[i] : 5;
+    const col = PALETTE[i%PALETTE.length];
+    return `<div class="admin-name-row">
+      <div class="aname" style="color:${col}">${n} <span style="opacity:0.4;font-size:10px">#${i+1}</span></div>
+      <div class="aweight">
+        <input type="range" min="1" max="20" value="${w}"
+          oninput="weights[${i}]=parseInt(this.value);this.nextElementSibling.textContent=this.value+'x'">
+        <span class="wval">${w}x</span>
+      </div>
+    </div>`;
+  }).join('') || '<div style="color:var(--muted);font-size:13px;text-align:center;padding:12px">No names added yet</div>';
+
+  // Show/hide fields based on mode
+  updateModeFields();
+}
+
+function updateModeFields() {
+  const mode = document.getElementById('rig-mode').value;
+  document.getElementById('boost-field').style.display   = mode==='boost'   ? 'block':'none';
+  document.getElementById('weights-field').style.display = mode==='weighted'? 'block':'none';
+}
+document.getElementById('rig-mode').addEventListener('change', updateModeFields);
+
+function resetWeights() {
+  weights = names.map(()=>5);
+  syncAdminNames();
+}
+
+// ══════════════════════════════════════════════
+//  INIT with sample names
+// ══════════════════════════════════════════════
+document.getElementById('names-input').value = 'Alice\nBob\nCharlie\nDiana\nEdward\nFiona';
+parseNames();
+</script>
+</body>
+</html>
